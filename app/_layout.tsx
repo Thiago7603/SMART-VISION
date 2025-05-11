@@ -1,29 +1,28 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
+import theme from "@/constants/theme";
+import Constants from "expo-constants";
+import { LinearGradient } from "expo-linear-gradient";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
-  }
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <>
+      {/* StatusBar translucida con estilo claro */}
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+
+      {/* Gradiente debajo de la status bar*/}
+      <LinearGradient
+        colors={[theme.COLORS.primary, theme.COLORS.secondary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={{
+          height: Constants.statusBarHeight,
+          width: "100%",
+        }}
+      />
+
+      {/* Navegación principal*/}
+      <Stack screenOptions={{ headerShown: false }} />
+    </>
   );
 }
