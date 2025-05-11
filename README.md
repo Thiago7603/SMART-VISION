@@ -92,6 +92,7 @@ La organización del proyecto sigue una arquitectura limpia (Clean Architecture)
 ├── package.json     # Dependencias y scripts del proyecto
 ├── tsconfig.json    # Configuración de TypeScript
 └── README.md        # Documentación del proyecto
+```
 
 ## Get started
 
