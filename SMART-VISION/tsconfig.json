@@ -13,5 +13,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-  ]
+, "components/auth/HeroImage.jsx", "components/auth/GradientTitle.jsx", "components/auth/GradientText.jsx"  ]
 }
