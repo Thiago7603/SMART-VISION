@@ -83,9 +83,7 @@ La organización del proyecto sigue una arquitectura limpia (Clean Architecture)
 ├── components/      # Componentes reutilizables (botones, tarjetas, etc.)
 ├── constants/       # Constantes de estilo, rutas, textos, etc.
 ├── core/            # Lógica de negocio, modelos, casos de uso
-├── hooks/           # Custom hooks reutilizables
 ├── infra/           # Infraestructura (Firebase, MediaPipe, ARCore)
-├── utils/           # Funciones utilitarias y helpers
 ├── .vscode/         # Configuración del entorno de desarrollo
 ├── .expo/           # Datos internos del entorno Expo
 ├── app.json         # Configuración principal de Expo
