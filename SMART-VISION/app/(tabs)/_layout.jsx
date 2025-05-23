@@ -1,10 +1,10 @@
-import CustomTabIcon from '@/components/tabs/CustomTabIcon';
-import theme from '@/constants/theme';
-import { AntDesign, Entypo, Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
-import React from 'react';
+import CustomTabIcon from './../../components/tabs/CustomTabIcon'
+import theme from './../../constants/theme'
+import { AntDesign, Entypo, Ionicons } from '@expo/vector-icons'
+import { Tabs } from 'expo-router'
+import React from 'react'
 
-export default function Layout() {
+export default function _layout() {
   return (
     <Tabs
       screenOptions={{
@@ -12,7 +12,7 @@ export default function Layout() {
         tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: theme.COLORS.white,
-          height: 60,
+          height: 65,
           justifyContent: 'center',
           paddingTop: 10,
         },
@@ -58,5 +58,5 @@ export default function Layout() {
         }}
       />
     </Tabs>
-  );
+  )
 }

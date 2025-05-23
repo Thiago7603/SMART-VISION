@@ -1,5 +1,5 @@
 import { View } from "react-native";
-import Landing from "@/app/Landing";
+import Landing from "./../app/Landing";
 
 export default function Index() {
   return (

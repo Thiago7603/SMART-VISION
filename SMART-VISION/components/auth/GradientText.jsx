@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
-import theme from '@/constants/theme'; 
+import theme from './../../constants/theme'; 
 
 export default function GradientTitle({ text }) {
   return (
