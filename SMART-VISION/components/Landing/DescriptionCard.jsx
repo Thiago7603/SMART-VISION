@@ -1,4 +1,4 @@
-import theme from '@/constants/theme';
+import theme from './../../constants/theme';
 import { StyleSheet, Text, View } from 'react-native';
 
 export default function DescriptionCard() {
