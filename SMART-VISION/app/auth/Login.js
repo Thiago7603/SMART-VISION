@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native'
 import Icon from 'react-native-vector-icons/FontAwesome'
 import theme from './../../constants/theme'
 
@@ -10,6 +10,10 @@ import GradientText from './../../components/auth/GradientText'
 import GradientTitle from './../../components/auth/GradientTitle'
 import HeroImage from './../../components/auth/HeroImage'
 
+// Importaciones de Firebase
+import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
+import { app } from './../../infra/Firebase/Firebaseconfig'
+
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -18,63 +22,80 @@ export default function Login() {
   const [error, setError] = useState('');
   const [forgotPasswordModal, setForgotPasswordModal] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const passwordInputRef = React.useRef(null);
 
-  const onSignIn= () => {
+  // Obtener la instancia de autenticación de Firebase
+  const auth = getAuth(app);
+
+  const onSignIn = async () => {
     if (!email || !password) {
-      alert('Por favor, completa todos los campos');
+      Alert.alert('Error', 'Por favor, completa todos los campos');
       return;
     }
 
     setError('');
+    setIsLoading(true);
 
-    //const userExists = mockUsers.find(user => 
-      //user.email === email && user.password === password
-    //);
-
-    //if (userExists) {
-    //   router.replace('/(tabs)/Home');
-    // } else {
-    //   setError('Credenciales incorrectas. Por favor verifica tu email y contraseña.');
-    // }
-
-    //signInWithEmailAndPassword(auth, email, password)
-      //.then((userCredential) => {
-        // Signed in 
-        //const user = userCredential.user;
-        // ...
-        router.replace('/(tabs)/Home');
-        //console.log(user);
-    //})
-    //.catch((error) => {
-      //const errorCode = error.code;
-      //const errorMessage = error.message;
-    //});
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // Si el inicio de sesión es exitoso, el observador de onAuthStateChanged
+      // en tu App.tsx manejará la redirección
+      router.replace('/(tabs)/Home');
+    } catch (error) {
+      setIsLoading(false);
+      let errorMessage = 'Ocurrió un error al iniciar sesión';
+      
+      switch (error.code) {
+        case 'auth/invalid-email':
+          errorMessage = 'El formato del correo electrónico no es válido';
+          break;
+        case 'auth/user-disabled':
+          errorMessage = 'Esta cuenta ha sido deshabilitada';
+          break;
+        case 'auth/user-not-found':
+          errorMessage = 'No existe una cuenta con este correo electrónico';
+          break;
+        case 'auth/wrong-password':
+          errorMessage = 'Contraseña incorrecta';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Demasiados intentos fallidos. Intenta más tarde o restablece tu contraseña';
+          break;
+        default:
+          console.error('Error en inicio de sesión:', error);
+      }
+      
+      setError(errorMessage);
+      Alert.alert('Error', errorMessage);
+    }
   }
 
-  const handleForgotPassword = () => {
+  const handleForgotPassword = async () => {
     if (!forgotPasswordEmail) {
-      alert('Error', 'Por favor ingresa tu correo electrónico');
+      Alert.alert('Error', 'Por favor ingresa tu correo electrónico');
       return;
     }
 
-    // Simulación de envío de correo (en tu caso real usarías Firebase)
-    alert('Correo enviado',
-      `Se ha enviado un enlace de recuperación a ${forgotPasswordEmail}`,
-      [{ text: 'OK', onPress: () => setForgotPasswordModal(false) }]
-    );
-    /*
-    sendPasswordResetEmail(auth, forgotPasswordEmail)
-      .then(() => {
-        Alert.alert(
-          'Correo enviado',
-          `Se ha enviado un enlace de recuperación a ${forgotPasswordEmail}`,
-          [{ text: 'OK', onPress: () => setForgotPasswordModal(false) }]
-        );
-      })
-      .catch((error) => {
-        Alert.alert('Error', 'No se pudo enviar el correo. Verifica la dirección.');
-      });
-    */
+    try {
+      await sendPasswordResetEmail(auth, forgotPasswordEmail);
+      Alert.alert(
+        'Correo enviado',
+        `Se ha enviado un enlace de recuperación a ${forgotPasswordEmail}`,
+        [{ text: 'OK', onPress: () => setForgotPasswordModal(false) }]
+      );
+      setForgotPasswordEmail('');
+    } catch (error) {
+      let errorMessage = 'No se pudo enviar el correo de recuperación';
+      
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = 'No existe una cuenta con este correo electrónico';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'El formato del correo electrónico no es válido';
+      }
+      
+      Alert.alert('Error', errorMessage);
+    }
   }
 
   return (
@@ -108,22 +129,27 @@ export default function Login() {
                       setEmail(text);
                       setError(''); 
                     }}
+                    onSubmitEditing={() => passwordInputRef.current && passwordInputRef.current.focus()}
                 />
+                
             </View>
 
             {/* CONTRASEÑA */}
             <View style={styles.inputContainer}>
-                <Icon name="lock" size={20} color="#999" style={styles.icon} />
                 <TextInput
+                    ref={passwordInputRef}
                     style={styles.input}
                     placeholder="Ingresa tu contraseña"
                     secureTextEntry={!showPassword}
                     returnKeyType='done'
+                    value={password}
                     onChangeText={(text) => {
                       setPassword(text);
                       setError(''); 
                     }}
+                    onSubmitEditing={onSignIn}
                 />
+                
                 <TouchableOpacity
                     onPress={() => setShowPassword(!showPassword)} 
                     style={styles.eyeIcon}
@@ -145,7 +171,11 @@ export default function Login() {
             </TouchableOpacity>
 
             {/* BOTON INICIAR SESION */}
-            <GradientButton text="Iniciar Sesion" onPress={onSignIn} />
+            <GradientButton 
+              text="Iniciar Sesion" 
+              onPress={onSignIn} 
+              loading={isLoading}
+            />
 
             {/* BOTON REGISTRAR */}
             <View style={styles.createAccountContainer}>
@@ -228,34 +258,39 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: theme.COLORS.black,    
   },
+  errorText: {
+    color: theme.COLORS.error,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
   inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderBottomWidth: 1,
-        borderBottomColor: '#ccc',
-        marginBottom: 15,
-        paddingVertical: 5
-    },
-    icon: {
-        marginRight: 10
-    },
-    input: {
-        flex: 1,
-        paddingVertical: 8
-    },
-    eyeIcon: {
-        padding: 5,
-    },
-    forgotPassword: {
-        alignSelf: 'flex-start',
-        marginBottom: 20,
-    },
-    forgotPasswordText: {
-        color: theme.COLORS.primary,
-        fontSize: theme.SIZES.sm,
-        fontWeight: '900',
-    },
-    createAccountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    marginBottom: 15,
+    paddingVertical: 5
+  },
+  icon: {
+    marginRight: 10
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 8
+  },
+  eyeIcon: {
+    padding: 5,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-start',
+    marginBottom: 20,
+  },
+  forgotPasswordText: {
+    color: theme.COLORS.primary,
+    fontSize: theme.SIZES.sm,
+    fontWeight: '900',
+  },
+  createAccountContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
   },

@@ -9,6 +9,10 @@ import FormHeader from './../../components/auth/FormHeader';
 import GradientButton from './../../components/auth/GradientButton';
 import GradientTitle from './../../components/auth/GradientTitle';
 
+// Importaciones de Firebase corregidas
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from './../../infra/Firebase/Firebaseconfig';
 
 export default function Register() {
 
@@ -44,34 +48,35 @@ export default function Register() {
     return strength;
   }
 
-  useEffect(() =>{
+  useEffect(() => {
     if (password) {
       const strength = checkPasswordStrength(password);
       setPasswordStrength(strength);
 
       if (strength < 4) {
-        setPasswordError('La contraseña edebe tener al menos 8 caracteres, incluyendo mayuscula, un numero y un caracter especial.');
+        setPasswordError('La contraseña debe tener al menos 8 caracteres, incluyendo mayúscula, un número y un carácter especial.');
       } else {
         setPasswordError('');
       }
-    }else{
+    } else {
       setPasswordStrength(0);
       setPasswordError('');
     }
 
     if (confirmPassword && password !== confirmPassword) {
       setConfirmPasswordError('Las contraseñas no coinciden.');
-    } else{
+    } else {
       setConfirmPasswordError('');
     }
   }, [password, confirmPassword]);
 
-  const OnCreateAccount = async() => {
-
+  const OnCreateAccount = async () => {
+    // Limpiar errores previos
     setEmailError('');
     setPasswordError('');
     setConfirmPasswordError('');
 
+    // Validaciones
     if (!fullName || !email || !password || !confirmPassword || !gender) {
       Alert.alert('Error', 'Por favor, completa todos los campos.');
       return;
@@ -93,22 +98,51 @@ export default function Register() {
     }
 
     try {
-      //const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      //const user = userCredential.user;
+      // Crear usuario en Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-      // await setDoc(doc(db, 'users', user.uid), {
-      //   fullName,
-      //   username,
-      //   gender,
-      //   email,
-      //   createdAt: new Date(),
-      // });
+      // Crear documento del usuario en Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        fullName,
+        gender,
+        email,
+        createdAt: new Date(),
+        uid: user.uid // Agregar el UID para referencia
+      });
 
-      //console.log('Usuario creado:', user.uid);
-      router.replace('/(tabs)/Home');
+      console.log('Usuario creado exitosamente:', user.uid);
+      Alert.alert('Éxito', 'Cuenta creada exitosamente', [
+        {
+          text: 'OK',
+          onPress: () => router.replace('/(tabs)/Home')
+        }
+      ]);
+
     } catch (error) {
       console.error('Error al crear usuario:', error);
-      Alert.alert('Error', error.message);
+      
+      // Manejar errores específicos de Firebase
+      let errorMessage = 'Error desconocido';
+      
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'Este correo electrónico ya está registrado.';
+          break;
+        case 'auth/weak-password':
+          errorMessage = 'La contraseña es muy débil.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'El correo electrónico no es válido.';
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = 'Error de conexión. Verifica tu internet.';
+          break;
+        default:
+          errorMessage = error.message;
+      }
+      
+      Alert.alert('Error', errorMessage);
     }
   }
 
@@ -153,6 +187,7 @@ export default function Register() {
                 <TextInput
                   style={styles.input}
                   placeholder="Nombre completo"
+                  value={fullName}
                   onChangeText={setFullName}
                   />
             </View>
@@ -174,6 +209,7 @@ export default function Register() {
                 <TextInput
                   style={styles.input}
                   placeholder="Correo electrónico"
+                  value={email}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   onChangeText={(text) => {
@@ -190,6 +226,7 @@ export default function Register() {
                 <TextInput
                   style={styles.input}
                   placeholder="Contraseña"
+                  value={password}
                   secureTextEntry={!showPassword}
                   onChangeText={(text) => {
                     setPassword(text);
@@ -238,6 +275,7 @@ export default function Register() {
                 <TextInput
                   style={styles.input}
                   placeholder="Confirmar contraseña"
+                  value={confirmPassword}
                   secureTextEntry={!showConfirmPassword}
                   onChangeText={setConfirmPassword}
                 />
@@ -278,14 +316,14 @@ export default function Register() {
                       }}
                     >
                       <Text style={styles.modalOptionText}>{item}</Text>
-                        </TouchableOpacity>
+                    </TouchableOpacity>
                   ))}
-                      <TouchableOpacity 
-                        style={styles.modalCancel}
-                        onPress={() => setGenderModalVisible(false)}
-                      >
-                        <Text style={styles.modalCancelText}>Cancelar</Text>
-                      </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.modalCancel}
+                    onPress={() => setGenderModalVisible(false)}
+                  >
+                    <Text style={styles.modalCancelText}>Cancelar</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </Modal>

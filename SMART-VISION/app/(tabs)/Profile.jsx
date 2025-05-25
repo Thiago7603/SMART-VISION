@@ -1,83 +1,156 @@
-import React, { useState } from 'react'
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity, TextInput, Alert } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
-import theme from '../../constants/theme'
-import Header from '../../components/profile/header'
+import React, { useState, useEffect } from 'react';
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import theme from '../../constants/theme';
+import Header from '../../components/profile/header';
+import { getAuth, updateEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut } from 'firebase/auth';
+import { doc, getDoc, updateDoc, getFirestore } from 'firebase/firestore';
+import { app } from './../../infra/Firebase/Firebaseconfig';
 
 export default function Profile() {
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const user = auth.currentUser;
+
   // Estados para los campos del perfil
   const [profileData, setProfileData] = useState({
-    name: 'Mariana',
-    email: 'mariana@example.com',
+    name: '',
+    email: '',
     password: '••••••••'
-  })
+  });
   
   const [isEditing, setIsEditing] = useState({
     name: false,
     email: false,
     password: false
-  })
+  });
   
-  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordData, setPasswordData] = useState({
     current: '',
     new: '',
     confirm: ''
-  })
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Cargar datos del usuario al montar el componente
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        if (user) {
+          // Obtener datos adicionales de Firestore
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          
+          setProfileData({
+            name: userDoc.exists() ? userDoc.data().name : 'Usuario',
+            email: user.email || '',
+            password: '••••••••'
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        Alert.alert('Error', 'No se pudieron cargar los datos del perfil');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [user, db]);
 
   // Función para alternar modo edición
   const toggleEdit = (field) => {
     setIsEditing(prev => ({
       ...prev,
       [field]: !prev[field]
-    }))
-  }
+    }));
+  };
 
-  // Función para guardar cambios
-  const saveField = (field, value) => {
-    setProfileData(prev => ({
-      ...prev,
-      [field]: value
-    }))
-    setIsEditing(prev => ({
-      ...prev,
-      [field]: false
-    }))
-  }
+  // Función para guardar cambios en el nombre
+  const saveName = async () => {
+    try {
+      if (!user) throw new Error('Usuario no autenticado');
+      
+      await updateDoc(doc(db, 'users', user.uid), {
+        name: profileData.name
+      });
+      
+      setIsEditing(prev => ({ ...prev, name: false }));
+      Alert.alert('Éxito', 'Nombre actualizado correctamente');
+    } catch (error) {
+      console.error("Error updating name:", error);
+      Alert.alert('Error', 'No se pudo actualizar el nombre');
+    }
+  };
+
+  // Función para guardar cambios en el email
+  const saveEmail = async () => {
+    try {
+      if (!user) throw new Error('Usuario no autenticado');
+      
+      await updateEmail(user, profileData.email);
+      setIsEditing(prev => ({ ...prev, email: false }));
+      Alert.alert('Éxito', 'Correo electrónico actualizado correctamente');
+    } catch (error) {
+      console.error("Error updating email:", error);
+      Alert.alert('Error', 'No se pudo actualizar el correo electrónico');
+      // Revertir el cambio en el estado si falla
+      setProfileData(prev => ({ ...prev, email: user?.email || '' }));
+    }
+  };
 
   // Función para cambiar contraseña
-  const handleChangePassword = () => {
-    if (passwordData.new !== passwordData.confirm) {
-      Alert.alert('Error', 'Las contraseñas no coinciden')
-      return
+  const handleChangePassword = async () => {
+    try {
+      if (!user) throw new Error('Usuario no autenticado');
+      if (passwordData.new !== passwordData.confirm) {
+        throw new Error('Las contraseñas no coinciden');
+      }
+      if (passwordData.new.length < 6) {
+        throw new Error('La contraseña debe tener al menos 6 caracteres');
+      }
+
+      // Reautenticar al usuario
+      const credential = EmailAuthProvider.credential(
+        user.email || '',
+        passwordData.current
+      );
+      
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, passwordData.new);
+      
+      Alert.alert('Éxito', 'Contraseña cambiada correctamente');
+      setPasswordData({ current: '', new: '', confirm: '' });
+      setShowChangePassword(false);
+    } catch (error) {
+      console.error("Error changing password:", error);
+      let errorMessage = 'Error al cambiar la contraseña';
+      
+      if (error.code === 'auth/wrong-password') {
+        errorMessage = 'La contraseña actual es incorrecta';
+      } else if (error.message.includes('coinciden')) {
+        errorMessage = 'Las contraseñas no coinciden';
+      } else if (error.message.includes('6 caracteres')) {
+        errorMessage = 'La contraseña debe tener al menos 6 caracteres';
+      }
+      
+      Alert.alert('Error', errorMessage);
     }
-    if (passwordData.new.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres')
-      return
-    }
-    
-    Alert.alert('Éxito', 'Contraseña cambiada correctamente')
-    setPasswordData({ current: '', new: '', confirm: '' })
-    setShowChangePassword(false)
-  }
+  };
 
   // Función para cerrar sesión
-  const handleLogout = () => {
-    Alert.alert(
-      'Cerrar Sesión',
-      '¿Estás seguro que deseas cerrar sesión?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Cerrar Sesión', style: 'destructive', onPress: () => {
-          // Aquí iría la lógica para cerrar sesión
-          console.log('Cerrando sesión...')
-        }}
-      ]
-    )
-  }
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // La redirección debería manejarse con el observer de autenticación
+    } catch (error) {
+      console.error("Error signing out:", error);
+      Alert.alert('Error', 'No se pudo cerrar la sesión');
+    }
+  };
 
   // Componente para campo editable
-  const EditableField = ({ label, value, field, secureTextEntry = false }) => (
+  const EditableField = ({ label, value, field, secureTextEntry = false, onSave }) => (
     <View style={styles.fieldContainer}>
       <View style={styles.fieldHeader}>
         <Text style={styles.fieldLabel}>{label}</Text>
@@ -106,19 +179,34 @@ export default function Profile() {
             onChangeText={(text) => setProfileData(prev => ({ ...prev, [field]: text }))}
             secureTextEntry={secureTextEntry}
             placeholder={`Ingresa tu ${label.toLowerCase()}`}
+            autoCapitalize={field === 'name' ? 'words' : 'none'}
+            keyboardType={field === 'email' ? 'email-address' : 'default'}
           />
           <TouchableOpacity 
             style={styles.saveButton}
-            onPress={() => saveField(field, profileData[field])}
+            onPress={onSave}
+            disabled={loading}
           >
-            <Text style={styles.saveButtonText}>Guardar</Text>
+            {loading ? (
+              <ActivityIndicator color={theme.COLORS.white} />
+            ) : (
+              <Text style={styles.saveButtonText}>Guardar</Text>
+            )}
           </TouchableOpacity>
         </View>
       ) : (
         <Text style={styles.fieldValue}>{value}</Text>
       )}
     </View>
-  )
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.COLORS.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -128,7 +216,7 @@ export default function Profile() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerWrapper}>
-          <Header />
+          <Header name={profileData.name} />
         </View>
         
         <View style={styles.contentContainer}>
@@ -139,13 +227,15 @@ export default function Profile() {
             <EditableField 
               label="Nombre" 
               value={profileData.name} 
-              field="name" 
+              field="name"
+              onSave={saveName}
             />
             
             <EditableField 
               label="Correo" 
               value={profileData.email} 
-              field="email" 
+              field="email"
+              onSave={saveEmail}
             />
             
             <EditableField 
@@ -153,23 +243,14 @@ export default function Profile() {
               value={profileData.password} 
               field="password" 
               secureTextEntry={true}
+              onSave={() => setShowChangePassword(true)}
             />
 
             {/* Sección cambiar contraseña */}
-            <View style={styles.changePasswordSection}>
-              <TouchableOpacity 
-                style={styles.changePasswordButton}
-                onPress={() => setShowChangePassword(!showChangePassword)}
-              >
-                <Text style={styles.changePasswordText}>Cambiar Contraseña</Text>
-                <Ionicons 
-                  name={showChangePassword ? 'chevron-up' : 'chevron-down'} 
-                  size={20} 
-                  color={theme.COLORS.secondary} 
-                />
-              </TouchableOpacity>
-              
-              {showChangePassword && (
+            {showChangePassword && (
+              <View style={styles.changePasswordSection}>
+                <Text style={styles.sectionTitle}>Cambiar Contraseña</Text>
+                
                 <View style={styles.passwordChangeForm}>
                   <TextInput
                     style={styles.passwordInput}
@@ -177,6 +258,7 @@ export default function Profile() {
                     secureTextEntry
                     value={passwordData.current}
                     onChangeText={(text) => setPasswordData(prev => ({ ...prev, current: text }))}
+                    autoCapitalize="none"
                   />
                   <TextInput
                     style={styles.passwordInput}
@@ -184,6 +266,7 @@ export default function Profile() {
                     secureTextEntry
                     value={passwordData.new}
                     onChangeText={(text) => setPasswordData(prev => ({ ...prev, new: text }))}
+                    autoCapitalize="none"
                   />
                   <TextInput
                     style={styles.passwordInput}
@@ -191,21 +274,39 @@ export default function Profile() {
                     secureTextEntry
                     value={passwordData.confirm}
                     onChangeText={(text) => setPasswordData(prev => ({ ...prev, confirm: text }))}
+                    autoCapitalize="none"
                   />
-                  <TouchableOpacity 
-                    style={styles.confirmPasswordButton}
-                    onPress={handleChangePassword}
-                  >
-                    <Text style={styles.confirmPasswordText}>Confirmar Cambio</Text>
-                  </TouchableOpacity>
+                  <View style={styles.buttonRow}>
+                    <TouchableOpacity 
+                      style={[styles.passwordButton, styles.cancelButton]}
+                      onPress={() => {
+                        setShowChangePassword(false);
+                        setPasswordData({ current: '', new: '', confirm: '' });
+                      }}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancelar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.passwordButton, styles.confirmButton]}
+                      onPress={handleChangePassword}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <ActivityIndicator color={theme.COLORS.white} />
+                      ) : (
+                        <Text style={styles.confirmButtonText}>Confirmar</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              )}
-            </View>
+              </View>
+            )}
 
             {/* Botón cerrar sesión */}
             <TouchableOpacity 
               style={styles.logoutButton}
               onPress={handleLogout}
+              disabled={loading}
             >
               <Ionicons name="log-out-outline" size={24} color={theme.COLORS.white} />
               <Text style={styles.logoutText}>Cerrar Sesión</Text>
@@ -214,7 +315,7 @@ export default function Profile() {
         </View>
       </ScrollView>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -390,5 +491,43 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.COLORS.white,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.COLORS.dark,
+    marginBottom: 15,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  passwordButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  cancelButton: {
+    backgroundColor: theme.COLORS.lightGray,
+  },
+  confirmButton: {
+    backgroundColor: theme.COLORS.secondary,
+  },
+  cancelButtonText: {
+    color: theme.COLORS.dark,
+    fontWeight: 'bold',
+  },
+  confirmButtonText: {
+    color: theme.COLORS.white,
+    fontWeight: 'bold',
   },
 })
