@@ -1,4 +1,4 @@
-import CustomTabIcon from './../../components/tabs/CustomTabIcon'
+import CustomTabIcon from '../components/tabs/CustomTabIcon'
 import theme from './../../constants/theme'
 import { AntDesign, Entypo, Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'

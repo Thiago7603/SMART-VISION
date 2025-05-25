@@ -13,5 +13,5 @@
     "**/*.jsx",
     ".expo/types/**/*.js",
     "expo-env.d.js"
-, "components/auth/HeroImage.jsx", "components/auth/GradientTitle.jsx", "components/auth/GradientText.jsx", "app/_layout.jsx", "app/index.jsx", "app/Landing.jsx"  ]
+, "app/components/auth/HeroImage.jsx", "app/components/auth/GradientTitle.jsx", "app/components/auth/GradientText.jsx", "app/_layout.jsx", "app/index.jsx", "app/Landing.jsx"  ]
 }

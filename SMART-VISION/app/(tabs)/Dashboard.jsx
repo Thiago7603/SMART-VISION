@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View, Text, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import theme from '../../constants/theme';
-import Header from '../../components/dashboard/header';
+import Header from '../components/dashboard/header';
 import { collection, query, where, getDocs, getFirestore } from 'firebase/firestore';
 import { app } from './../../infra/Firebase/Firebaseconfig';
 import { getAuth } from 'firebase/auth';

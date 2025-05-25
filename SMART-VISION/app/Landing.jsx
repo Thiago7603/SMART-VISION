@@ -1,10 +1,10 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import DescriptionCard from './../components/Landing/DescriptionCard';
-import GradientTitle from './../components/Landing/GradientTitle';
-import HeroImage from './../components/Landing/HeroImage';
-import GradientButton from './../components/Landing/GradientButton';
+import DescriptionCard from './components/Landing/DescriptionCard';
+import GradientTitle from './components/Landing/GradientTitle';
+import HeroImage from './components/Landing/HeroImage';
+import GradientButton from './components/Landing/GradientButton';
 
 export default function Landing() {
   const router = useRouter();

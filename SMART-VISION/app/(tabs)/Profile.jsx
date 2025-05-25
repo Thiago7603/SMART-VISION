@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View, Text, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../../constants/theme';
-import Header from '../../components/profile/header';
+import Header from '../components/profile/header';
 import { getAuth, updateEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, getFirestore } from 'firebase/firestore';
 import { app } from './../../infra/Firebase/Firebaseconfig';

@@ -5,10 +5,10 @@ import Icon from 'react-native-vector-icons/FontAwesome'
 import theme from './../../constants/theme'
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
-import GradientButton from './../../components/auth/GradientButton'
-import GradientText from './../../components/auth/GradientText'
-import GradientTitle from './../../components/auth/GradientTitle'
-import HeroImage from './../../components/auth/HeroImage'
+import GradientButton from '../components/auth/GradientButton'
+import GradientText from '../components/auth/GradientText'
+import GradientTitle from '../components/auth/GradientTitle'
+import HeroImage from '../components/auth/HeroImage'
 
 // Importaciones de Firebase
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
