@@ -5,9 +5,9 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import theme from './../../constants/theme';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import FormHeader from './../../components/auth/FormHeader';
-import GradientButton from './../../components/auth/GradientButton';
-import GradientTitle from './../../components/auth/GradientTitle';
+import FormHeader from '../components/auth/FormHeader';
+import GradientButton from '../components/auth/GradientButton';
+import GradientTitle from '../components/auth/GradientTitle';
 
 // Importaciones de Firebase corregidas
 import { createUserWithEmailAndPassword } from 'firebase/auth';

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { SafeAreaView, StatusBar, Text, ActivityIndicator, View } from 'react-native'
 import theme from '../../constants/theme'
-import ExerciseDetail from '../../components/Home/ExerciseDetail'
+import ExerciseDetail from '../components/Home/ExerciseDetail'
 import { useLocalSearchParams } from 'expo-router'
 import { doc, getDoc, getFirestore } from 'firebase/firestore'
 import { app } from './../../infra/Firebase/Firebaseconfig'

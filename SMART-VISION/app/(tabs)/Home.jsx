@@ -1,8 +1,8 @@
 import React from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import theme from '../../constants/theme'
-import ExerciseList from './../../components/Home/ExerciseList'
-import Header from './../../components/Home/Header'
+import ExerciseList from '../components/Home/ExerciseList'
+import Header from '../components/Home/Header'
 
 export default function Home() {
   return (
