@@ -42,8 +42,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "11ce48ea-d7b7-4b7d-81f6-f2a581090c3c"
+        "projectId": "e3de5c44-0535-486a-a3cd-0794e4b0e165"
       }
-    }
+    },
+    "owner": "santiago7603"
   }
 }
