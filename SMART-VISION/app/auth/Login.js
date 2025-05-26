@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router'
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native'
 import Icon from 'react-native-vector-icons/FontAwesome'
 import theme from './../../constants/theme'
@@ -11,183 +11,145 @@ import GradientTitle from '../components/auth/GradientTitle'
 import HeroImage from '../components/auth/HeroImage'
 
 // Importaciones de Firebase
-import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
-import { app } from './../../infra/Firebase/Firebaseconfig'
+import { handleLogin, handleForgotPassword } from '../../core/auth/authService';
+import { getAuthInstance } from './../../infra/Firebase/firebaseAuth';
 
 export default function Login() {
   const router = useRouter();
+  const auth = getAuthInstance();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
   const [forgotPasswordModal, setForgotPasswordModal] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const passwordInputRef = React.useRef(null);
-
-  // Obtener la instancia de autenticación de Firebase
-  const auth = getAuth(app);
+  const passwordInputRef = useRef(null);
 
   const onSignIn = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Por favor, completa todos los campos');
-      return;
-    }
-
     setError('');
     setIsLoading(true);
-
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // Si el inicio de sesión es exitoso, el observador de onAuthStateChanged
-      // en tu App.tsx manejará la redirección
+      await handleLogin(email, password);
       router.replace('/(tabs)/Home');
     } catch (error) {
-      setIsLoading(false);
-      let errorMessage = 'Ocurrió un error al iniciar sesión';
-      
+      let message = 'Ocurrió un error al iniciar sesión';
       switch (error.code) {
+        case 'auth/empty-fields':
+          message = 'Por favor, completa todos los campos';
+          break;
         case 'auth/invalid-email':
-          errorMessage = 'El formato del correo electrónico no es válido';
+          message = 'El correo electrónico no es válido';
           break;
         case 'auth/user-disabled':
-          errorMessage = 'Esta cuenta ha sido deshabilitada';
+          message = 'Esta cuenta ha sido deshabilitada';
           break;
         case 'auth/user-not-found':
-          errorMessage = 'No existe una cuenta con este correo electrónico';
+          message = 'No existe una cuenta con este correo';
           break;
         case 'auth/wrong-password':
-          errorMessage = 'Contraseña incorrecta';
+          message = 'Contraseña incorrecta';
           break;
         case 'auth/too-many-requests':
-          errorMessage = 'Demasiados intentos fallidos. Intenta más tarde o restablece tu contraseña';
+          message = 'Demasiados intentos. Intenta más tarde';
           break;
         default:
-          console.error('Error en inicio de sesión:', error);
+          console.error('Error de inicio:', error);
       }
-      
-      setError(errorMessage);
-      Alert.alert('Error', errorMessage);
+      setIsLoading(false);
+      setError(message);
+      Alert.alert('Error', message);
     }
-  }
+  };
 
-  const handleForgotPassword = async () => {
-    if (!forgotPasswordEmail) {
-      Alert.alert('Error', 'Por favor ingresa tu correo electrónico');
-      return;
-    }
-
+  const onSendResetEmail = async () => {
     try {
-      await sendPasswordResetEmail(auth, forgotPasswordEmail);
+      await handleForgotPassword(forgotPasswordEmail);
       Alert.alert(
         'Correo enviado',
-        `Se ha enviado un enlace de recuperación a ${forgotPasswordEmail}`,
+        `Se envió un enlace a ${forgotPasswordEmail}`,
         [{ text: 'OK', onPress: () => setForgotPasswordModal(false) }]
       );
       setForgotPasswordEmail('');
     } catch (error) {
-      let errorMessage = 'No se pudo enviar el correo de recuperación';
-      
+      let msg = 'No se pudo enviar el correo';
       if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No existe una cuenta con este correo electrónico';
+        msg = 'No existe una cuenta con este correo';
       } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'El formato del correo electrónico no es válido';
+        msg = 'Correo no válido';
+      } else if (error.code === 'auth/empty-email') {
+        msg = 'Ingresa tu correo electrónico';
       }
-      
-      Alert.alert('Error', errorMessage);
+      Alert.alert('Error', msg);
     }
-  }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAwareScrollView 
-        contentContainerStyle={styles.scrollContainer}
-        enableOnAndroid={true}
-        extraHeight={120}
-        keyboardShouldPersistTaps="handled"
-        enableAutomaticScroll={true}>
-  
-          <GradientTitle text="SMART VISION" />
-          <HeroImage />
+      <KeyboardAwareScrollView contentContainerStyle={styles.scrollContainer}>
+        <GradientTitle text="SMART VISION" />
+        <HeroImage />
 
-          <View style={styles.card}>
-          
-            <Text style={styles.title}>Inicia Sesion</Text>
+        <View style={styles.card}>
+          <Text style={styles.title}>Inicia Sesión</Text>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-            {/* EMAIL */}
-            <View style={styles.inputContainer}>
-                <Icon name="envelope" size={20} color="#999" style={styles.icon} />
-                <TextInput 
-                    style={styles.input}
-                    placeholder="Ingresa tu Correo"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    returnKeyType='next'
-                    onChangeText={(text) => {
-                      setEmail(text);
-                      setError(''); 
-                    }}
-                    onSubmitEditing={() => passwordInputRef.current && passwordInputRef.current.focus()}
-                />
-                
-            </View>
-
-            {/* CONTRASEÑA */}
-            <View style={styles.inputContainer}>
-                <TextInput
-                    ref={passwordInputRef}
-                    style={styles.input}
-                    placeholder="Ingresa tu contraseña"
-                    secureTextEntry={!showPassword}
-                    returnKeyType='done'
-                    value={password}
-                    onChangeText={(text) => {
-                      setPassword(text);
-                      setError(''); 
-                    }}
-                    onSubmitEditing={onSignIn}
-                />
-                
-                <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)} 
-                    style={styles.eyeIcon}
-                >
-                    <Icon
-                        name={showPassword ? "eye" : "eye-slash"}
-                        size={20}
-                        color="#999"
-                    />
-                </TouchableOpacity>
-            </View>
-
-            {/* OLVIDE CONTRASEÑA */}
-            <TouchableOpacity 
-            style={styles.forgotPassword}
-            onPress={() => setForgotPasswordModal(true)}
-            >
-                <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
-            </TouchableOpacity>
-
-            {/* BOTON INICIAR SESION */}
-            <GradientButton 
-              text="Iniciar Sesion" 
-              onPress={onSignIn} 
-              loading={isLoading}
+          {/* Email */}
+          <View style={styles.inputContainer}>
+            <Icon name="envelope" size={20} color="#999" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Ingresa tu Correo"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              returnKeyType="next"
+              onChangeText={(text) => {
+                setEmail(text);
+                setError('');
+              }}
+              onSubmitEditing={() => passwordInputRef.current?.focus()}
             />
+          </View>
 
-            {/* BOTON REGISTRAR */}
-            <View style={styles.createAccountContainer}>
-                <Text style={styles.createAccountText}>¿No tienes una cuenta? </Text>
-                <TouchableOpacity onPress={() => router.push('/auth/Register')}>
-                    <GradientText text='Crear Cuenta' />
-                </TouchableOpacity>
-            </View>
-      
+          {/* Password */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              ref={passwordInputRef}
+              style={styles.input}
+              placeholder="Ingresa tu contraseña"
+              secureTextEntry={!showPassword}
+              returnKeyType="done"
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                setError('');
+              }}
+              onSubmitEditing={onSignIn}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+              <Icon name={showPassword ? 'eye' : 'eye-slash'} size={20} color="#999" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Forgot Password */}
+          <TouchableOpacity style={styles.forgotPassword} onPress={() => setForgotPasswordModal(true)}>
+            <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+          </TouchableOpacity>
+
+          {/* Login Button */}
+          <GradientButton text="Iniciar Sesión" onPress={onSignIn} loading={isLoading} />
+
+          {/* Register */}
+          <View style={styles.createAccountContainer}>
+            <Text style={styles.createAccountText}>¿No tienes una cuenta? </Text>
+            <TouchableOpacity onPress={() => router.push('/auth/Register')}>
+              <GradientText text="Crear Cuenta" />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* MODAL PARA OLVIDÉ CONTRASEÑA */}
+        {/* Modal */}
         <Modal
           visible={forgotPasswordModal}
           transparent={true}
@@ -197,45 +159,31 @@ export default function Login() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Recuperar Contraseña</Text>
-              
               <View style={styles.inputContainer}>
                 <Icon name="envelope" size={20} color="#999" style={styles.icon} />
-                <TextInput 
+                <TextInput
                   style={styles.input}
                   placeholder="Ingresa tu correo registrado"
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  onChangeText={setForgotPasswordEmail}
                   value={forgotPasswordEmail}
+                  onChangeText={setForgotPasswordEmail}
                 />
               </View>
-
-              <GradientButton 
-                text="Enviar Enlace" 
-                onPress={handleForgotPassword}
-                style={styles.modalButton}
-              />
-
-              <TouchableOpacity 
-                style={styles.modalCancel}
-                onPress={() => setForgotPasswordModal(false)}
-              >
+              <GradientButton text="Enviar Enlace" onPress={onSendResetEmail} style={styles.modalButton} />
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setForgotPasswordModal(false)}>
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
-
       </KeyboardAwareScrollView>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.COLORS.lightGray,
-  },
+  container: { flex: 1, backgroundColor: theme.COLORS.lightGray },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
@@ -256,7 +204,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '900',
     marginBottom: 10,
-    color: theme.COLORS.black,    
+    color: theme.COLORS.black,
   },
   errorText: {
     color: theme.COLORS.error,
@@ -269,35 +217,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
     marginBottom: 15,
-    paddingVertical: 5
+    paddingVertical: 5,
   },
-  icon: {
-    marginRight: 10
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 8
-  },
-  eyeIcon: {
-    padding: 5,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-start',
-    marginBottom: 20,
-  },
+  icon: { marginRight: 10 },
+  input: { flex: 1, paddingVertical: 8 },
+  eyeIcon: { padding: 5 },
+  forgotPassword: { alignSelf: 'flex-start', marginBottom: 20 },
   forgotPasswordText: {
     color: theme.COLORS.primary,
     fontSize: theme.SIZES.sm,
     fontWeight: '900',
   },
-  createAccountContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
+  createAccountContainer: { flexDirection: 'row', justifyContent: 'center' },
   createAccountText: {
     color: theme.COLORS.black,
     fontSize: theme.SIZES.md,
-    fontWeight: '900'
+    fontWeight: '900',
   },
   modalOverlay: {
     flex: 1,
@@ -317,9 +252,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  modalButton: {
-    marginTop: 10,
-  },
+  modalButton: { marginTop: 10 },
   modalCancel: {
     marginTop: 15,
     padding: 10,
@@ -329,4 +262,4 @@ const styles = StyleSheet.create({
     color: theme.COLORS.primary,
     fontWeight: 'bold',
   },
-})
+});

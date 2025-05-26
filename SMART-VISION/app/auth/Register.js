@@ -9,16 +9,10 @@ import FormHeader from '../components/auth/FormHeader';
 import GradientButton from '../components/auth/GradientButton';
 import GradientTitle from '../components/auth/GradientTitle';
 
-// Importaciones de Firebase corregidas
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from './../../infra/Firebase/Firebaseconfig';
+import { createAccount } from '../../core/auth/authregister';
 
-export default function Register() {
-
+export default function RegisterScreen() {
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -26,313 +20,168 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [gender, setGender] = useState('');
   const [genderModalVisible, setGenderModalVisible] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
-  const [passwordStrength, setPasswordStrength] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState(0);
 
   const genders = ['Hombre', 'Mujer', 'Otro Tipo'];
 
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }
-
-  const checkPasswordStrength = (pass) => {
-    let strength = 0;
-    if (pass.length >= 8) strength++;
-    if (/[A-Z]/.test(pass)) strength++;
-    if (/[0-9]/.test(pass)) strength++;
-    if (/[^a-zA-Z0-9]/.test(pass)) strength++;
-    return strength;
-  }
-
   useEffect(() => {
-    if (password) {
-      const strength = checkPasswordStrength(password);
+    const validatePassword = async () => {
+      const { strength, error } = await createAccount.checkPassword(password, confirmPassword);
       setPasswordStrength(strength);
+      setPasswordError(error.passwordError);
+      setConfirmPasswordError(error.confirmPasswordError);
+    };
 
-      if (strength < 4) {
-        setPasswordError('La contraseña debe tener al menos 8 caracteres, incluyendo mayúscula, un número y un carácter especial.');
-      } else {
-        setPasswordError('');
-      }
-    } else {
-      setPasswordStrength(0);
-      setPasswordError('');
-    }
-
-    if (confirmPassword && password !== confirmPassword) {
-      setConfirmPasswordError('Las contraseñas no coinciden.');
-    } else {
-      setConfirmPasswordError('');
-    }
+    validatePassword();
   }, [password, confirmPassword]);
 
-  const OnCreateAccount = async () => {
-    // Limpiar errores previos
-    setEmailError('');
-    setPasswordError('');
-    setConfirmPasswordError('');
+  const handleRegister = async () => {
+    const result = await createAccount.registerUser({
+      fullName,
+      email,
+      password,
+      confirmPassword,
+      gender
+    });
 
-    // Validaciones
-    if (!fullName || !email || !password || !confirmPassword || !gender) {
-      Alert.alert('Error', 'Por favor, completa todos los campos.');
+    if (!result.success) {
+      Alert.alert('Error', result.message);
       return;
     }
 
-    if (!validateEmail(email)) {
-      setEmailError('Correo electrónico inválido.');
-      return;
-    }
-
-    if (passwordStrength < 4) {
-      setPasswordError('La contraseña debe tener al menos 8 caracteres, incluyendo una mayúscula, un número y un carácter especial.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Las contraseñas no coinciden.');
-      return;
-    }
-
-    try {
-      // Crear usuario en Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Crear documento del usuario en Firestore
-      await setDoc(doc(db, 'users', user.uid), {
-        fullName,
-        gender,
-        email,
-        createdAt: new Date(),
-        uid: user.uid // Agregar el UID para referencia
-      });
-
-      console.log('Usuario creado exitosamente:', user.uid);
-      Alert.alert('Éxito', 'Cuenta creada exitosamente', [
-        {
-          text: 'OK',
-          onPress: () => router.replace('/(tabs)/Home')
-        }
-      ]);
-
-    } catch (error) {
-      console.error('Error al crear usuario:', error);
-      
-      // Manejar errores específicos de Firebase
-      let errorMessage = 'Error desconocido';
-      
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          errorMessage = 'Este correo electrónico ya está registrado.';
-          break;
-        case 'auth/weak-password':
-          errorMessage = 'La contraseña es muy débil.';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'El correo electrónico no es válido.';
-          break;
-        case 'auth/network-request-failed':
-          errorMessage = 'Error de conexión. Verifica tu internet.';
-          break;
-        default:
-          errorMessage = error.message;
-      }
-      
-      Alert.alert('Error', errorMessage);
-    }
-  }
+    Alert.alert('Éxito', 'Cuenta creada exitosamente', [
+      { text: 'OK', onPress: () => router.replace('/(tabs)/Home') }
+    ]);
+  };
 
   const getStrengthColor = () => {
-    switch(passwordStrength) {
-      case 0: return '#e0e0e0';
-      case 1: return '#ff5252'; // Rojo (débil)
-      case 2: return '#ffab40'; // Naranja (regular)
-      case 3: return '#ffd600'; // Amarillo (buena)
-      case 4: return '#4caf50'; // Verde (fuerte)
-      default: return '#e0e0e0';
-    }
+    const colors = ['#e0e0e0', '#ff5252', '#ffab40', '#ffd600', '#4caf50'];
+    return colors[passwordStrength] || '#e0e0e0';
   };
 
   const getStrengthText = () => {
-    switch(passwordStrength) {
-      case 0: return '';
-      case 1: return 'Débil';
-      case 2: return 'Regular';
-      case 3: return 'Buena';
-      case 4: return 'Fuerte';
-      default: return '';
-    }
+    const levels = ['', 'Débil', 'Regular', 'Buena', 'Fuerte'];
+    return levels[passwordStrength];
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAwareScrollView
-        contentContainerStyle={styles.scrollContainer}
-        enableOnAndroid={true}
-        extraScrollHeight={120}
-        keyboardShouldPersistTaps="handled"
-        enableAutomaticScroll={true}>
-          
-          <GradientTitle text='SMART VISION' />
-          <View style={styles.card}>
-            <FormHeader />
+      <KeyboardAwareScrollView contentContainerStyle={styles.scrollContainer}>
+        <GradientTitle text='SMART VISION' />
+        <View style={styles.card}>
+          <FormHeader />
 
-            {/* NOMBRE COMPLETO */}
-            <View style={styles.inputContainer}>
-              <Icon name="user" size={20} color="#999" style={styles.icon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Nombre completo"
-                  value={fullName}
-                  onChangeText={setFullName}
-                  />
-            </View>
-
-            {/* GÉNERO (MODAL) */}
-            <TouchableOpacity 
-              style={styles.inputContainer}
-              onPress={() => setGenderModalVisible(true)}
-            >
-              <Icon name="venus-mars" size={20} color="#999" style={styles.icon} />
-              <Text style={[styles.genderText, !gender && { color: '#999' }]}>
-                {gender || 'Selecciona tu género'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* EMAIL */}
-            <View style={styles.inputContainer}>
-              <Icon name="envelope" size={20} color="#999" style={styles.icon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Correo electrónico"
-                  value={email}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  onChangeText={(text) => {
-                    setEmail(text);
-                    setEmailError('');
-                  }}
-                />
-            </View>
-            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-
-            {/* CONTRASEÑA */}
-            <View style={styles.inputContainer}>
-              <Icon name="lock" size={20} color="#999" style={styles.icon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Contraseña"
-                  value={password}
-                  secureTextEntry={!showPassword}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    setPasswordError('');
-                  }}
-                />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}
-                  >
-                    <Icon
-                      name={showPassword ? "eye" : "eye-slash"}
-                      size={20}
-                      color="#999"
-                    />
-                  </TouchableOpacity>
-            </View>
-            {/* Indicador de fortaleza de contraseña */}
-            {password.length > 0 && (
-              <View style={styles.strengthContainer}>
-                <View style={styles.strengthBarContainer}>
-                  {[1, 2, 3, 4].map((i) => (
-                    <View 
-                      key={i}
-                      style={[
-                        styles.strengthBar,
-                        { 
-                          backgroundColor: i <= passwordStrength ? getStrengthColor() : '#e0e0e0',
-                          width: `${100/4 - 2}%`
-                        }
-                      ]}
-                    />
-                  ))}
-                </View>
-                <Text style={[styles.strengthText, { color: getStrengthColor() }]}>
-                  {getStrengthText()}
-                </Text>
-              </View>
-            )}
-            
-            {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-
-            {/* CONFIRMAR CONTRASEÑA */}
-            <View style={styles.inputContainer}>
-              <Icon name="lock" size={20} color="#999" style={styles.icon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirmar contraseña"
-                  value={confirmPassword}
-                  secureTextEntry={!showConfirmPassword}
-                  onChangeText={setConfirmPassword}
-                />
-                  <TouchableOpacity
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    style={styles.eyeIcon}
-                  >
-                    <Icon
-                      name={showConfirmPassword ? "eye" : "eye-slash"}
-                      size={20}
-                      color="#999"
-                      />
-                  </TouchableOpacity>
-            </View>
-            {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
-
-            <GradientButton 
-              onPress={OnCreateAccount}
-              text="REGISTRARME"
+          {/* Nombre */}
+          <View style={styles.inputContainer}>
+            <Icon name="user" size={20} color="#999" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Nombre completo"
+              value={fullName}
+              onChangeText={setFullName}
             />
-
-            {/* MODAL DE GÉNERO */}
-            <Modal
-              visible={genderModalVisible}
-              transparent={true}
-              animationType="slide"
-              onRequestClose={() => setGenderModalVisible(false)}
-            >
-              <View style={styles.modalOverlay}>
-                <View style={styles.modalContainer}>
-                  {genders.map((item) => (
-                    <TouchableOpacity
-                      key={item}
-                      style={styles.modalOption}
-                      onPress={() => {
-                        setGender(item);
-                        setGenderModalVisible(false);
-                      }}
-                    >
-                      <Text style={styles.modalOptionText}>{item}</Text>
-                    </TouchableOpacity>
-                  ))}
-                  <TouchableOpacity 
-                    style={styles.modalCancel}
-                    onPress={() => setGenderModalVisible(false)}
-                  >
-                    <Text style={styles.modalCancelText}>Cancelar</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Modal>
-
           </View>
-        
+
+          {/* Género */}
+          <TouchableOpacity style={styles.inputContainer} onPress={() => setGenderModalVisible(true)}>
+            <Icon name="venus-mars" size={20} color="#999" style={styles.icon} />
+            <Text style={[styles.genderText, !gender && { color: '#999' }]}>
+              {gender || 'Selecciona tu género'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Email */}
+          <View style={styles.inputContainer}>
+            <Icon name="envelope" size={20} color="#999" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Correo electrónico"
+              value={email}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              onChangeText={(text) => {
+                setEmail(text);
+                setEmailError('');
+              }}
+            />
+          </View>
+          {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+
+          {/* Contraseña */}
+          <View style={styles.inputContainer}>
+            <Icon name="lock" size={20} color="#999" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Contraseña"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+              <Icon name={showPassword ? 'eye' : 'eye-slash'} size={20} color="#999" />
+            </TouchableOpacity>
+          </View>
+          {password.length > 0 && (
+            <View style={styles.strengthContainer}>
+              <View style={styles.strengthBarContainer}>
+                {[1, 2, 3, 4].map((i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.strengthBar,
+                      { backgroundColor: i <= passwordStrength ? getStrengthColor() : '#e0e0e0' }
+                    ]}
+                  />
+                ))}
+              </View>
+              <Text style={[styles.strengthText, { color: getStrengthColor() }]}>{getStrengthText()}</Text>
+            </View>
+          )}
+          {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+
+          {/* Confirmar contraseña */}
+          <View style={styles.inputContainer}>
+            <Icon name="lock" size={20} color="#999" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Confirmar contraseña"
+              secureTextEntry={!showConfirmPassword}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+              <Icon name={showConfirmPassword ? 'eye' : 'eye-slash'} size={20} color="#999" />
+            </TouchableOpacity>
+          </View>
+          {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
+
+          <GradientButton onPress={handleRegister} text="REGISTRARME" />
+
+          {/* Modal Género */}
+          <Modal visible={genderModalVisible} transparent animationType="slide">
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                {genders.map((item) => (
+                  <TouchableOpacity key={item} style={styles.modalOption} onPress={() => {
+                    setGender(item);
+                    setGenderModalVisible(false);
+                  }}>
+                    <Text>{item}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </Modal>
+        </View>
       </KeyboardAwareScrollView>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({

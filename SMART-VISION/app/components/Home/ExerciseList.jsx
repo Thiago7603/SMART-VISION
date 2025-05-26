@@ -1,31 +1,14 @@
+import React, { useEffect, useState } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Dimensions, ActivityIndicator } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
-import React, { useEffect, useState } from 'react'
-import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native'
-import theme from '../../../constants/theme'
-import { collection, getDocs, getFirestore } from 'firebase/firestore'
-import { app } from '../../../infra/Firebase/Firebaseconfig'
 import GradientText from './GradientText'
+import theme from '../../../constants/theme'
+import { getGroupedExercises } from './../../../core/getGroupedExercises'
 
 const { width: screenWidth } = Dimensions.get('window')
 const CARD_WIDTH = screenWidth * 0.39
 const CARD_MARGIN = 15
-
-/**
- * @typedef {Object} Exercise
- * @property {string} id
- * @property {string} name
- * @property {string} category
- * @property {string} icon
- * @property {string} [description]
- * @property {string} [videoUrl]
- */
-
-/**
- * @typedef {Object} ExerciseCategory
- * @property {string} category
- * @property {Exercise[]} exercises
- */
 
 export default function ExerciseList() {
   const router = useRouter()
@@ -36,21 +19,8 @@ export default function ExerciseList() {
   useEffect(() => {
     const fetchExercises = async () => {
       try {
-        const db = getFirestore(app)
-        const exercisesCollection = collection(db, 'exercises')
-        const querySnapshot = await getDocs(exercisesCollection)
-        
-        const exercises = []
-        querySnapshot.forEach((doc) => {
-          exercises.push({
-            id: doc.id,
-            ...doc.data()
-          })
-        })
-
-        // Agrupar ejercicios por categoría
-        const groupedExercises = groupByCategory(exercises)
-        setExerciseData(groupedExercises)
+        const grouped = await getGroupedExercises()
+        setExerciseData(grouped)
       } catch (err) {
         console.error("Error fetching exercises: ", err)
         setError('Error al cargar los ejercicios')
@@ -61,15 +31,6 @@ export default function ExerciseList() {
 
     fetchExercises()
   }, [])
-
-  const groupByCategory = (exercises) => {
-    const categories = [...new Set(exercises.map(ex => ex.category))]
-    
-    return categories.map(category => ({
-      category,
-      exercises: exercises.filter(ex => ex.category === category)
-    }))
-  }
 
   const handlePress = (exercise) => {
     router.push({
@@ -105,7 +66,6 @@ export default function ExerciseList() {
       {exerciseData.map((section, index) => (
         <View key={index} style={styles.section}>
           <GradientText text={section.category} style={styles.sectionTitle}/>
-          
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
