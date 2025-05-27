@@ -1,5 +1,3 @@
-metele esto...
-
 # 🧠 Smart Vision
 
 *Smart Vision* es una aplicación móvil desarrollada con *React Native (Expo)* que utiliza tecnologías de *visión por computadora* y *realidad aumentada* para ofrecer una experiencia de entrenamiento físico inteligente y segura.
@@ -94,6 +92,8 @@ bash
 └── README.md        # Documentación del proyecto
 `
 
+---
+
 🧰 Instalación y Configuración
 ✅ Requisitos Previos
 Node.js >= 16
@@ -106,6 +106,7 @@ Dispositivo físico Android compatible con ARCore
 
 Editor como VS Code
 
+---
 
 🧠 Tecnologías Clave Adicionales
 PostgreSQL: Utilizado como base de datos principal para almacenar usuarios, rutinas, progresos y métricas.
@@ -114,10 +115,12 @@ MediaPipe: Se usa para procesar video en tiempo real y detectar la postura del u
 
 ARCore: Se encarga de renderizar objetos virtuales sobre el entorno físico del usuario y guiar ejercicios con realidad aumentada.
 
+---
 
 git clone https://github.com/Thiago76/smart-vision.git
 cd smart-vision
 
+---
 
 ## Get started
 
