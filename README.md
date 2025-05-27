@@ -1,4 +1,4 @@
-![Logo Smart Vision](./SMART-VISION/app/assets/images/lower1.png)
+![Logo Smart Vision](./SMART-VISION/app/assets/images/logo.png)
 
 
 # 🧠 Smart Vision
