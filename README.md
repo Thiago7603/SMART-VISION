@@ -1,3 +1,6 @@
+![Logo del Proyecto](file:///C:/Users/USUARIO/Pictures/Screenshots/logo.jpg)
+
+
 # 🧠 Smart Vision
 
 *Smart Vision* es una aplicación móvil desarrollada con *React Native (Expo)* que utiliza tecnologías de *visión por computadora* y *realidad aumentada* para ofrecer una experiencia de entrenamiento físico inteligente y segura.
