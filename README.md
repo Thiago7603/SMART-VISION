@@ -94,7 +94,7 @@ bash
 
 ---
 
-🧰 Instalación y Configuración
+## 🧰 Instalación y Configuración
 ✅ Requisitos Previos
 Node.js >= 16
 
@@ -108,7 +108,7 @@ Editor como VS Code
 
 ---
 
-🧠 Tecnologías Clave Adicionales
+## 🧠 Tecnologías Clave Adicionales
 PostgreSQL: Utilizado como base de datos principal para almacenar usuarios, rutinas, progresos y métricas.
 
 MediaPipe: Se usa para procesar video en tiempo real y detectar la postura del usuario durante el ejercicio.
