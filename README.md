@@ -116,30 +116,32 @@ MediaPipe: Se usa para procesar video en tiempo real y detectar la postura del u
 ARCore: Se encarga de renderizar objetos virtuales sobre el entorno físico del usuario y guiar ejercicios con realidad aumentada.
 
 ---
-
+```
 git clone https://github.com/Thiago76/smart-vision.git
 cd smart-vision
-
+```
 ---
 
 ## Get started
 
 1. Install dependencies
-
+   
+   ```
    bash
    npm install
-   
+   ```
 
-2. Configura las variables de entorno
+3. Configura las variables de entorno
 
 Crea un archivo .env en la raíz del proyecto con tus credenciales y rutas a la base de datos:
 
+```
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=smart_vision
 DB_USER=tu_usuario
 DB_PASSWORD=tu_contraseña
-
+```
 
 3.Configura ips en los archivos Register / Login / api.js
 
@@ -150,13 +152,15 @@ const response = await axios.post('http://1xx.xx.xx.x:4000/api/auth/register'
 
 4. Iniciar Base de Datos
 
+```
 cd backend
 node Server.js
+```
 
 Mensaje a recibir: Servidor corriendo en http://localhost:4000
 
 5. Start the app
-
+   ```
    bash
    npx expo start
    ```
