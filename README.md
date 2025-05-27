@@ -1,4 +1,4 @@
-![Logo del Proyecto](file:///C:/Users/USUARIO/Pictures/Screenshots/logo.jpg)
+![Logo Smart Vision](./app/assets/images/lower1.png)
 
 
 # 🧠 Smart Vision
