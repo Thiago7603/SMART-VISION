@@ -1,5 +1,7 @@
 ![Logo Smart Vision](./SMART-VISION/app/assets/images/logo.png)
 
+![Descripción del video](./SMART-VISION/app/assets/Demostracion.mp4)
+
 
 # 🧠 Smart Vision
 
@@ -74,7 +76,7 @@ En conjunto, se trata de una arquitectura basada en *cliente móvil + servicios 
 
 ## 🛠 Estructura de Carpetas (resumen)
 
-`bash
+```bash
 ## 📁 Estructura del Proyecto
 
 La organización del proyecto sigue una arquitectura limpia (Clean Architecture) con separación por capas:
@@ -93,7 +95,7 @@ bash
 ├── package.json     # Dependencias y scripts del proyecto
 ├── tsconfig.json    # Configuración de TypeScript
 └── README.md        # Documentación del proyecto
-`
+```
 
 ---
 
